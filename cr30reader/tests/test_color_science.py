@@ -25,43 +25,39 @@ class TestSpectrumDataLoader(unittest.TestCase):
     def test_init_with_wavelengths(self):
         """Test SpectrumDataLoader initialization with wavelengths."""
         self.assertEqual(self.loader.wavelengths, self.wavelengths)
-        self.assertIsNone(self.loader._observers)
-        self.assertIsNone(self.loader._illuminants)
+        self.assertIsNotNone(self.loader._observers)
+        self.assertIsNotNone(self.loader._illuminants)
     
     def test_init_without_wavelengths(self):
         """Test SpectrumDataLoader initialization without wavelengths."""
         loader = SpectrumDataLoader()
         self.assertIsNone(loader.wavelengths)
     
-    def test_downsample_nearest(self):
-        """Test nearest neighbor downsampling."""
-        X = np.array([400, 410, 420])
-        Xp = np.array([398, 405, 408, 412, 415, 418, 422])
-        Yp = np.array([10, 20, 30, 40, 50, 60, 70])
+    def test_get_observer(self):
+        """Test getting observer (CMF) data."""
+        # Test 10 degree observer
+        cmf = self.loader.get_observer(wavelengths=self.wavelengths, observer="10")
+        self.assertIn('wavelengths', cmf)
+        self.assertIn('x_bar', cmf)
+        self.assertIn('y_bar', cmf)
+        self.assertIn('z_bar', cmf)
+        self.assertEqual(len(cmf['wavelengths']), len(self.wavelengths))
         
-        result = self.loader.downsample_nearest(X, Xp, Yp)
-        
-        self.assertEqual(len(result), len(X))
-        # 400 should match 398 -> 10
-        self.assertAlmostEqual(result[0], 10.0, places=5)
-        # 410 should match 412 -> 40
-        self.assertAlmostEqual(result[1], 40.0, places=5)
-        # 420 should match 418 -> 60
-        self.assertAlmostEqual(result[2], 60.0, places=5)
+        # Test 2 degree observer
+        cmf = self.loader.get_observer(wavelengths=self.wavelengths, observer="2")
+        self.assertEqual(len(cmf['wavelengths']), len(self.wavelengths))
     
-    def test_restrict_to_X_range(self):
-        """Test range restriction."""
-        X = np.array([400, 500])
-        Xp = np.array([350, 400, 450, 500, 550, 600])
-        Yp = np.array([10, 20, 30, 40, 50, 60])
+    def test_get_illuminant(self):
+        """Test getting illuminant data."""
+        # Test D65
+        illum = self.loader.get_illuminant(wavelengths=self.wavelengths, illuminant="D65")
+        self.assertIn('wavelengths', illum)
+        self.assertIn('values', illum)
+        self.assertEqual(len(illum['wavelengths']), len(self.wavelengths))
         
-        Xp_restricted, Yp_restricted = self.loader.restrict_to_X_range(X, Xp, Yp)
-        
-        self.assertTrue(np.all(Xp_restricted >= np.min(X)))
-        self.assertTrue(np.all(Xp_restricted <= np.max(X)))
-        self.assertEqual(len(Xp_restricted), len(Yp_restricted))
-        self.assertEqual(Xp_restricted[0], 400)
-        self.assertEqual(Xp_restricted[-1], 500)
+        # Test D50
+        illum = self.loader.get_illuminant(wavelengths=self.wavelengths, illuminant="D50")
+        self.assertEqual(len(illum['wavelengths']), len(self.wavelengths))
 
 
 class TestColorScience(unittest.TestCase):

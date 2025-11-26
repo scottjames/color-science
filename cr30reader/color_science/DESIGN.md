@@ -12,23 +12,21 @@ color_science/
 ├── color_science.py      # ColorScience, ColorScienceBase, SpectrumDataLoader
 ├── white_points.py       # WhitePoint - Standard illuminants
 ├── DESIGN.md            # This document
-└── data/                # Reference data (moved to main data/)
-    ├── CIE_xyz_1931_2deg.csv
-    ├── CIE_xyz_1964_10deg.csv
-    ├── CIE_std_illum_D65.csv
-    ├── CIE_std_illum_D50.csv
-    └── CIE_std_illum_A_1nm.csv
+└── COLOUR_INTEGRATION.md # Integration guide for colour-science library
 ```
 
 ## Dependencies
 
 **External Dependencies:**
 - `numpy` - Numerical computations and array operations
-- `scipy` - Interpolation functions for spectral resampling
-- `colour-science` - Advanced color science algorithms (optional)
+- `colour-science` - Comprehensive color science library (core dependency)
+  - Spectral data (CMF, illuminants)
+  - Color space conversions
+  - Chromatic adaptation
+  - Spectral processing
 
 **Internal Dependencies:**
-- `data/` - Reference CSV files for CIE observers and illuminants
+- None - All spectral data comes from colour-science library
 
 ## Core Classes
 
@@ -53,29 +51,28 @@ class ColorScienceBase(ABC):
 ```
 
 ### SpectrumDataLoader
-**Purpose**: Loads and manages CIE observer and illuminant spectral datasets from CSV files
+**Purpose**: Loads and manages CIE observer and illuminant spectral datasets using colour-science
 
 **Key Responsibilities:**
-- Load CSV files from data directory
-- Load CIE observer (CMF) data
-- Load illuminant spectral data
-- Handle wavelength downsampling and range restriction
+- Access colour-science's built-in spectral data (CMF, illuminants)
+- Handle wavelength interpolation using colour-science's SpectralDistribution
 - Manage loaded datasets in memory
+- Provide interface compatible with existing code
 
 **Interface:**
 ```python
 class SpectrumDataLoader:
     def __init__(self, wavelengths=None)
     
-    def load_csv(self, path: str) -> List[List[float]]
-    def load_observer(self, path: str) -> Dict[str, np.ndarray]
-    def load_illuminant(self, path: str) -> Dict[str, np.ndarray]
-    def load_reference_data(self)
     def get_observer(self, wavelengths=None, observer="10") -> Dict[str, np.ndarray]
     def get_illuminant(self, wavelengths=None, illuminant="D65") -> Dict[str, np.ndarray]
-    def downsample_nearest(self, X, Xp, Yp) -> np.ndarray
-    def restrict_to_X_range(self, X, Xp, Yp) -> Tuple[np.ndarray, np.ndarray]
 ```
+
+**Implementation Notes:**
+- Uses `colour.colorimetry.MSDS_CMFS` for Color Matching Functions
+- Uses `colour.colorimetry.SDS_ILLUMINANTS` for standard illuminants
+- All spectral data comes from colour-science library (no CSV files needed)
+- Interpolation handled automatically by colour-science's SpectralDistribution
 
 ### ColorScience
 **Purpose**: Concrete implementation of color science calculations
@@ -132,9 +129,10 @@ class WhitePoint:
 
 ### Data Loading Strategy
 - **Separation of Concerns**: Spectrum datasets loading is handled by `SpectrumDataLoader` class
-- **Lazy Loading**: Reference data loaded on first use via `load_reference_data()`
-- **Caching**: Loaded data cached in `SpectrumDataLoader` for performance
-- **Fallback**: Graceful handling of missing data files
+- **colour-science Integration**: All spectral data comes from colour-science library
+- **No CSV Files**: Eliminates need for maintaining CSV files
+- **Automatic Interpolation**: colour-science handles wavelength interpolation automatically
+- **Comprehensive Data**: Access to many more illuminants and observers than before
 
 ### Color Space Conversions
 - **XYZ as Intermediate**: All conversions go through XYZ
@@ -144,21 +142,21 @@ class WhitePoint:
 ## Key Algorithms
 
 ### SPD to XYZ Conversion
-1. Use `SpectrumDataLoader` to get CIE observer data (2° or 10°)
-2. Use `SpectrumDataLoader` to get illuminant spectral data
-3. Interpolate/resample to match wavelengths using `upsample_interpolate()`
-4. Apply color matching functions
-5. Calculate XYZ tristimulus values
+1. Use `SpectrumDataLoader` to get CIE observer data (2° or 10°) from colour-science
+2. Use `SpectrumDataLoader` to get illuminant spectral data from colour-science
+3. Create `SpectralDistribution` objects for SPD and illuminant
+4. Use `colour.colorimetry.spectral_to_XYZ()` for conversion
+5. Returns XYZ tristimulus values
 
 ### Chromatic Adaptation
-1. Calculate adaptation matrices
-2. Apply Bradford transform
-3. Convert between illuminants
+1. Use `colour.adaptation.chromatic_adaptation_VonKries()` function
+2. Supports Bradford, CAT02, and Von Kries transforms
+3. Converts between illuminants using proven algorithms
 
 ### Color Space Conversions
-- XYZ ↔ LAB: Using illuminant-specific white points
-- XYZ ↔ RGB: Using sRGB transformation matrix
-- RGB ↔ LAB: Via XYZ intermediate
+- XYZ ↔ LAB: Using `colour.XYZ_to_Lab()` and `colour.Lab_to_XYZ()` with illuminant-specific white points
+- XYZ ↔ RGB: Using `colour.XYZ_to_RGB()` and `colour.RGB_to_XYZ()` for sRGB
+- RGB ↔ LAB: Via XYZ intermediate (using colour-science functions)
 
 ## Open Questions
 

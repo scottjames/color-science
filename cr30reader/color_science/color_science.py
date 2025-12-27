@@ -12,7 +12,8 @@ import colour
 from colour.colorimetry import (
     MSDS_CMFS,
     SDS_ILLUMINANTS,
-    spectral_to_XYZ,
+    #spectral_to_XYZ,
+    sd_to_XYZ,
     SpectralDistribution,
 )
 from colour import XYZ_to_Lab, Lab_to_XYZ, XYZ_to_RGB, RGB_to_XYZ

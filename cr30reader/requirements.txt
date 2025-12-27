@@ -2,6 +2,3 @@ pyserial-asyncio>=0.6
 numpy>=1.21.0
 matplotlib>=3.5.0
 colour-science>=0.4.0
-numpy
-colour-science
-matplotlib
